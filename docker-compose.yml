@@ -50,7 +50,10 @@ x-web-defaults: &web-defaults
 
 services:
   ml_api:
-    hostname: ml_api
+    hostname: obico-serverml_api
+    networks:
+      - local
+      - bambuddy
     restart: unless-stopped
     build:
       context: ml_api
@@ -70,8 +73,13 @@ services:
   web:
     <<: *web-defaults
     hostname: web
-    ports:
-      - "3334:3334"
+    networks:
+      local:
+      proxy:
+        aliases:
+          - obico-server
+    # ports:
+    #   - "3334:3334"
     depends_on:
       - ml_api
     command: sh -c 'python manage.py migrate && python manage.py collectstatic -v 2 --noinput && daphne -b 0.0.0.0 -p 3334 config.routing:application'
@@ -85,6 +93,8 @@ services:
   tasks:
     <<: *web-defaults
     hostname: tasks
+    networks:
+      - local
     command: sh -c "celery -A config worker --beat -l info -c 2 -Q realtime,celery"
     healthcheck:
       test: ["CMD-SHELL", "celery -A config inspect ping"]
@@ -94,6 +104,8 @@ services:
       retries: 3
 
   redis:
+    networks:
+      - local
     restart: unless-stopped
     image: redis:7.2-alpine
     healthcheck:
@@ -102,3 +114,11 @@ services:
       interval: 15s
       timeout: 10s
       retries: 20
+
+networks:
+  local:
+    external: false
+  proxy:
+    external: true
+  bambuddy:
+    external: true

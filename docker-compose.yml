@@ -52,8 +52,7 @@ services:
   ml_api:
     hostname: obico-serverml_api
     networks:
-      - local
-      - bambuddy
+      - obico-ml
     restart: unless-stopped
     build:
       context: ml_api
@@ -70,55 +69,55 @@ services:
       timeout: 10s
       retries: 3
 
-  web:
-    <<: *web-defaults
-    hostname: web
-    networks:
-      local:
-      proxy:
-        aliases:
-          - obico-server
-    # ports:
-    #   - "3334:3334"
-    depends_on:
-      - ml_api
-    command: sh -c 'python manage.py migrate && python manage.py collectstatic -v 2 --noinput && daphne -b 0.0.0.0 -p 3334 config.routing:application'
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider --no-check-certificate http://web:3334/hc/"]
-      start_period: 30s
-      interval: 90s
-      timeout: 20s
-      retries: 3
+  # web:
+  #   <<: *web-defaults
+  #   hostname: web
+  #   networks:
+  #     local:
+  #     proxy:
+  #       aliases:
+  #         - obico-server
+  #   # ports:
+  #   #   - "3334:3334"
+  #   depends_on:
+  #     - ml_api
+  #   command: sh -c 'python manage.py migrate && python manage.py collectstatic -v 2 --noinput && daphne -b 0.0.0.0 -p 3334 config.routing:application'
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider --no-check-certificate http://web:3334/hc/"]
+  #     start_period: 30s
+  #     interval: 90s
+  #     timeout: 20s
+  #     retries: 3
 
-  tasks:
-    <<: *web-defaults
-    hostname: tasks
-    networks:
-      - local
-    command: sh -c "celery -A config worker --beat -l info -c 2 -Q realtime,celery"
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A config inspect ping"]
-      start_period: 15s
-      interval: 30s
-      timeout: 10s
-      retries: 3
+  # tasks:
+  #   <<: *web-defaults
+  #   hostname: tasks
+  #   networks:
+  #     - local
+  #   command: sh -c "celery -A config worker --beat -l info -c 2 -Q realtime,celery"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "celery -A config inspect ping"]
+  #     start_period: 15s
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
 
-  redis:
-    networks:
-      - local
-    restart: unless-stopped
-    image: redis:7.2-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping" ]
-      start_period: 15s
-      interval: 15s
-      timeout: 10s
-      retries: 20
+  # redis:
+  #   networks:
+  #     - local
+  #   restart: unless-stopped
+  #   image: redis:7.2-alpine
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "--raw", "incr", "ping" ]
+  #     start_period: 15s
+  #     interval: 15s
+  #     timeout: 10s
+  #     retries: 20
 
 networks:
-  local:
-    external: false
-  proxy:
-    external: true
-  bambuddy:
+  # local:
+  #   external: false
+  # proxy:
+  #   external: true
+  obico-ml:
     external: true
